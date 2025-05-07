@@ -1,0 +1,9 @@
+[submodule "cowrie"]
+	path = cowrie
+	url = https://github.com/cowrie/cowrie.git
+[submodule "sshesame"]
+	path = sshesame
+	url = https://github.com/jaksi/sshesame.git
+[submodule "sshhipot"]
+	path = sshhipot
+	url = https://github.com/magisterquis/sshhipot.git
