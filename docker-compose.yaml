@@ -12,7 +12,7 @@ services:
 
   cowrie:
     build:
-      context: cowrie
+      context: ./cowrie
       dockerfile: docker/Dockerfile
     volumes:
       - cowrie-data:/data/cowrie
