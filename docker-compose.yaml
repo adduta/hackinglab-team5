@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  sshesame:
+    build:
+      context: ./sshesame
+      dockerfile: Dockerfile
+    volumes:
+      - sshesame-data:/data/sshesame
+    ports:
+      - "2022:2022"
+
+  cowrie:
+    build:
+      context: cowrie
+      dockerfile: docker/Dockerfile
+    volumes:
+      - cowrie-data:/data/cowrie
+    ports:
+      - "2222:2222"
+
+  # sshhipot:
+  #   build:
+  #     context: ./sshhipot
+  #     dockerfile: Dockerfile.sshhipot
+  #   volumes:
+  #     - sshhipot-data:/data/sshhipot
+  #   ports:
+  #     - "2223:2223"
+
+volumes:
+  sshesame-data:
+  cowrie-data:
+  sshhipot-data:
