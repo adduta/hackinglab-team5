@@ -1,5 +1,8 @@
 # hackinglab-team5
 Detecting Honeypots in the wild
 
+# Cloning
+git clone --recurse-submodules  *< URL >*
 # Initialization
-git clone --recurse-submodules <URL>
+git submodule update --init --recursive
+
