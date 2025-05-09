@@ -19,14 +19,14 @@ services:
     ports:
       - "2222:2222"
 
-  # sshhipot:
-  #   build:
-  #     context: ./sshhipot
-  #     dockerfile: Dockerfile.sshhipot
-  #   volumes:
-  #     - sshhipot-data:/data/sshhipot
-  #   ports:
-  #     - "2223:2223"
+  sshhipot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - sshhipot-data:/data/sshhipot
+    ports:
+      - "2223:2223"
 
 volumes:
   sshesame-data:
