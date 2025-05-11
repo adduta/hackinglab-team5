@@ -54,7 +54,7 @@ services:
     build:
       context: ./prober
       dockerfile: Dockerfile
-    command: tail -F anything
+    command: python3 /prober/src/probe.py
     networks:
       honeypot_net:
         ipv4_address: 192.168.125.10
