@@ -8,4 +8,5 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     net-tools \
     iproute2 \
+    nmap \
  && pip install paramiko pyshark

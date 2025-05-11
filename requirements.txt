@@ -1,0 +1,2 @@
+paramiko>=3.0.0 
+python-nmap>=0.7.1
