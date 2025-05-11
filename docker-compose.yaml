@@ -8,7 +8,7 @@ services:
     volumes:
       - sshesame-data:/data/sshesame
     ports:
-      - "2022:2022"
+      - "2221:2022"
 
   cowrie:
     build:
@@ -18,17 +18,7 @@ services:
       - cowrie-data:/data/cowrie
     ports:
       - "2222:2222"
-
-  sshhipot:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - sshhipot-data:/data/sshhipot
-    ports:
-      - "2223:2223"
-
+      
 volumes:
   sshesame-data:
   cowrie-data:
-  sshhipot-data:
