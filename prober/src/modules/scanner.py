@@ -10,7 +10,7 @@ def run_nmap_scan(output_file):
         {"ip": "192.168.125.30", "port": 2222, "name": "cowrie"},
         {"ip": "192.168.125.40", "port": 2022, "name": "sshesame"},
         {"ip": "192.168.125.90", "port": 2224, "name": "debian"},
-        {"ip": "192.168.125.20", "port": 2223, "name": "sshhipot"}
+        #{"ip": "192.168.125.20", "port": 2223, "name": "sshhipot"}
     ]
     
     try:
@@ -20,6 +20,7 @@ def run_nmap_scan(output_file):
             "-oN", output_file,
             "-T4"
         ]
+        return known_targets
         print("[*] Running nmap scan...")
         subprocess.run(cmd, check=True)
         print(f"[+] Nmap scan completed successfully. Results saved to {output_file}")

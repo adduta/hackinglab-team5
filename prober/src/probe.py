@@ -12,8 +12,14 @@ def main():
     # 1. Run Nmap scan to discover SSH servers and their configurations
     nmap_output_file = '/prober/src/nmap_results.txt'
     targets = run_nmap_scan(nmap_output_file)
-
-    # 2. Probe each target
+    # 2. Create commands you want to run in each container
+    commands = [
+        'whoami',
+        'pwd',
+        'ls -la',
+        'uname -a'
+    ]
+    # 3. Probe each target
     interface = 'eth0'
     for target in targets:
         pcap_file = f'ssh_probe_{target["name"]}.pcap'
@@ -22,9 +28,10 @@ def main():
             target['ip'],
             target['port'],
             "root",
-            "password",
+            "admin",
             pcap_file,
-            interface
+            interface,
+            commands=commands
         )
 
 if __name__ == '__main__':
