@@ -90,3 +90,4 @@ volumes:
   sshesame-data:
   cowrie-data:
   sshhipot-data:
+  kippo-logs:
