@@ -35,6 +35,18 @@ services:
     ports:
       - "2223:2223"
 
+  kippo:
+    build: ./kippo
+    ports:
+      - "2225:2222"
+    volumes:
+      - kippo-logs:/home/kippo/kippo/log
+    container_name: kippo-honeypot
+    networks:
+      honeypot_net:
+        ipv4_address: 192.168.125.50
+
+
   debian:
     build:
       context: ./debian
