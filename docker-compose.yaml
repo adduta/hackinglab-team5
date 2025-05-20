@@ -54,6 +54,14 @@ services:
         source: ./prober/src
         target: /prober/src
 
+  honeytrap:
+    image: honeytrap/honeytrap:latest
+    networks:
+      honeypot_net:
+        ipv4_address: 192.168.125.44
+    ports:
+      - "8022:8022"
+
 networks:
   honeypot_net:
     driver: bridge
