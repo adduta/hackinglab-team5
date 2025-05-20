@@ -13,12 +13,12 @@ def main():
     nmap_output_file = '/prober/src/nmap_results.txt'
     targets = run_nmap_scan(nmap_output_file)
     # 2. Create commands you want to run in each container
-    commands = [
-        'whoami',
-        'pwd',
-        'ls -la',
-        'uname -a'
-    ]
+    commands = {
+        
+        "test" : 'whoami',
+        "test2" :' ls'
+        
+        }
     # 3. Probe each target
     interface = 'eth0'
     for target in targets:
