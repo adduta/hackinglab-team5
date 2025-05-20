@@ -1,7 +1,13 @@
+"""Module for SSH analysis and honeypot detection"""
 import pyshark
 import paramiko
-import time 
-def analyze_pcap(pcap_file):
+import time
+from typing import Dict, Tuple, Optional
+from .credential_manager import CredentialManager
+from .auth_tester import AuthTester
+from .honeypot_fingerprinter import HoneypotFingerprinter, clean_ansi_escape_codes
+
+def analyze_pcap(pcap_file: str) -> None:
     """Analyze the pcap file and print the SSH packet details"""
     print(f"Analyzing {pcap_file}")
     cap = pyshark.FileCapture(pcap_file, display_filter='ssh')
@@ -14,62 +20,95 @@ def analyze_pcap(pcap_file):
             print(f"Packet parsing error: {e}")
     cap.close()
 
-def try_ssh_auth(host, port, username, auth_func, auth_arg,commands):
+def execute_commands(session, commands: Dict[str, str]) -> Dict[str, str]:
+    """Execute a list of commands and return their results"""
+    results = {}
+    try:
+        session.get_pty()
+        session.invoke_shell()
+        for key, command in commands.items():
+            session.send(command + "\n")
+            time.sleep(0.5)
+            output = b""
+            end_time = time.time() + 5
+            while time.time() < end_time:
+                if session.recv_ready():
+                    output += session.recv(2048)
+                else:
+                    time.sleep(0.2)
+            decoded = output.decode(errors='ignore')
+            clean_text = extract_command_output(decoded, command)
+            results[key] = clean_text
+    except Exception as e:
+        print(f'Error executing commands: {e}')
+    return results
+
+def try_multiple_auth(host: str, port: int, auth_func, auth_arg, num_attempts: int = 10) -> HoneypotFingerprinter:
+    """Try multiple authentication attempts with different credentials"""
+    credential_manager = CredentialManager()
+    auth_tester = AuthTester(credential_manager)
+    return auth_tester.test_auth(host, port, auth_func, num_attempts)
+
+def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, commands: Dict[str, str]) -> Tuple[Optional[Dict[str, str]], Optional[Dict[str, float]]]:
     """Try to authenticate to the SSH server and print the result"""
+    # First, perform multiple authentication attempts
+    fingerprinter = try_multiple_auth(host, port, auth_func, auth_arg)
+    
+    # Now try the actual authentication for command execution
     transport = paramiko.Transport((host, port))
     try:
         transport.start_client(timeout=5)
-        print(f"[+] SSH Banner: {transport.remote_version}")
         auth_func(transport, username, auth_arg)
-        #execute commands if auth was successfull
+        
         if transport.is_authenticated():
             print(f"[+] Auth succeeded for {username}@{host}")
-            results={}
-            if commands: 
+            if commands:
                 session = transport.open_session()
-                try:
-                    session.get_pty()
-                    session.invoke_shell()
-                    for key in commands.keys(): 
-                        # "test name : command "
-                        command=commands.get(key)
-                        session.send(command + "\n")
-                        time.sleep(0.5)
-                        output = b""
-                        end_time = time.time() + 5
-                        while time.time() < end_time:
-                            if session.recv_ready():
-                                output += session.recv(2048)
-                            else:
-                                time.sleep(0.2)
-                        decoded = output.decode(errors='ignore')
-                        clean_text=extract_command_output(decoded,command)
-                        results[key] = clean_text
-                except Exception as e :
-                    print(f'{e}')
-                print(f"RESULTS: {results}")
-                session.close()
+                results = execute_commands(session, commands)
                 
+                # Format and print results nicely
+                print("\n=== Command Results ===")
+                for cmd, output in results.items():
+                    print(f"\n--- {cmd} ---")
+                    formatted_output = format_command_output(cmd, output)
+                    print(formatted_output)
+                
+                # Analyze results for honeypot detection
+                analysis = fingerprinter.analyze_all_responses(results)
+                print("\n=== Honeypot Analysis ===")
+                print(f"Total Score: {analysis['total_score']:.2f}")
+                print(f"Empty Response Ratio: {analysis['empty_response_ratio']:.2%}")
+                print(f"Auth Success Rate: {analysis['auth_success_rate']:.2%}")
+                if 'auth_score' in analysis:
+                    print(f"Auth Score Contribution: {analysis['auth_score']:.2f}")
+                print(f"Likely Honeypot: {analysis['is_honeypot']}")
+                print("Command-specific scores:")
+                for cmd, score in analysis['command_scores'].items():
+                    print(f"  {cmd}: {score:.2f}")
+                
+                session.close()
+                return results, analysis
         else:
             print(f"[-] Auth failed for {username}@{host}")
+            return None, None
+            
     except Exception as e:
         print(f"[!] Error: {e}")
+        return None, None
     finally:
         transport.close()
 
-def password_auth(transport, username, password):
+def password_auth(transport: paramiko.Transport, username: str, password: str) -> None:
     """Authenticate using password"""
     transport.auth_password(username, password)
 
-def public_key_auth(transport, username, key_path):
+def public_key_auth(transport: paramiko.Transport, username: str, key_path: str) -> None:
     """Authenticate using public key"""
     key = paramiko.RSAKey.from_private_key_file(key_path)
     transport.auth_publickey(username, key) 
-    
-def extract_command_output(raw_output: str, command: str):
-    """
-    Extract the output of a command from a Cowrie shell-like response.
-    """
+
+def extract_command_output(raw_output: str, command: str) -> str:
+    """Extract the output of a command from a shell-like response."""
     parts = raw_output.split(command, 1)
     if len(parts) < 2:
         return ""
@@ -81,10 +120,56 @@ def extract_command_output(raw_output: str, command: str):
     lines = after_command.strip().splitlines()
 
     # Return the content between the command and next prompt
-    # (Assumes prompt looks like 'root@svr04:~#')
     clean_lines = []
     for line in lines:
         if line.strip().endswith("#") or line.strip().endswith("$"):
             break
         clean_lines.append(line.strip())
     return "\n".join(clean_lines)
+
+def format_command_output(command: str, output: str) -> str:
+    """Format command output in a readable way"""
+    cleaned_output = clean_ansi_escape_codes(output)
+    
+    # Format based on command type
+    if command == 'ls':
+        # Split into lines and format as a table
+        lines = cleaned_output.strip().split('\n')
+        if len(lines) > 0:
+            # Skip the total line if present
+            if lines[0].startswith('total'):
+                lines = lines[1:]
+            # Format each line
+            formatted_lines = []
+            for line in lines:
+                parts = line.split()
+                if len(parts) >= 9:
+                    # Format: permissions size date time name
+                    formatted_line = f"{parts[0]:<10} {parts[4]:>8} {parts[5]:<3} {parts[6]:<5} {parts[7]:<5} {' '.join(parts[8:])}"
+                    formatted_lines.append(formatted_line)
+            return '\n'.join(formatted_lines)
+    
+    elif command == 'ps':
+        # Format ps output as a table
+        lines = cleaned_output.strip().split('\n')
+        if len(lines) > 0:
+            # Get the header
+            header = lines[0]
+            # Format the data rows
+            formatted_lines = [header]
+            for line in lines[1:]:
+                parts = line.split()
+                if len(parts) >= 11:
+                    # Format: USER PID %CPU %MEM VSZ RSS TTY STAT START TIME COMMAND
+                    formatted_line = f"{parts[0]:<8} {parts[1]:>6} {parts[2]:>5} {parts[3]:>5} {parts[4]:>8} {parts[5]:>8} {parts[6]:<6} {parts[7]:<4} {parts[8]:<6} {' '.join(parts[9:])}"
+                    formatted_lines.append(formatted_line)
+            return '\n'.join(formatted_lines)
+    
+    elif command == 'uname':
+        # Format uname output in a more readable way
+        parts = cleaned_output.strip().split()
+        if len(parts) >= 3:
+            return f"OS: {parts[0]}\nHostname: {parts[1]}\nKernel: {' '.join(parts[2:])}"
+    
+    # Default formatting for other commands
+    return cleaned_output.strip()

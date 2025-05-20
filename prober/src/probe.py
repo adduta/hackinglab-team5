@@ -14,11 +14,11 @@ def main():
     targets = run_nmap_scan(nmap_output_file)
     # 2. Create commands you want to run in each container
     commands = {
-        
-        "test" : 'whoami',
-        "test2" :' ls'
-        
-        }
+        "whoami": "whoami",
+        "ls": "ls -la",   
+        "ps": "ps aux",
+        "uname": "uname -a"
+    }
     # 3. Probe each target
     interface = 'eth0'
     for target in targets:
