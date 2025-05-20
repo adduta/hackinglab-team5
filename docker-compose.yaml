@@ -9,7 +9,7 @@ services:
         honeypot_net:
           ipv4_address: 192.168.125.40
     ports:
-      - "2022:2022"
+      - "2221:2022"
 
   cowrie:
     build:
@@ -23,17 +23,6 @@ services:
     ports:
       - "2222:2222"
 
-  sshhipot:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - sshhipot-data:/data/sshhipot
-    networks:
-        honeypot_net:
-          ipv4_address: 192.168.125.20
-    ports:
-      - "2223:2223"
 
   debian:
     build:
@@ -77,4 +66,3 @@ networks:
 volumes:
   sshesame-data:
   cowrie-data:
-  sshhipot-data:
