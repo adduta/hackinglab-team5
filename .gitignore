@@ -1,3 +1,30 @@
-/.idea
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
 
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+.env/
+.venv/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project specific files
 *.pcap
+nmap_results.txt
+*.log
+
+# System specific files
+.DS_Store
+Thumbs.db
