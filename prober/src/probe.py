@@ -26,9 +26,9 @@ def main():
         print(f"\n[*] Probing {target['name']} at {target['ip']}:{target['port']}")
         probe_ssh_server(
             target['ip'],
-            target['port'],
+            target['port'] if target['name']!="debian" else 22,
             "root",
-            "admin",
+            "admin" if target['name']!="honeytrap" else "password",
             pcap_file,
             interface,
             commands=commands

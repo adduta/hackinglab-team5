@@ -54,6 +54,24 @@ services:
         source: ./prober/src
         target: /prober/src
 
+  honeytrap:
+    image: honeytrap/honeytrap:latest
+    networks:
+      honeypot_net:
+        ipv4_address: 192.168.125.44
+    ports:
+      - "8022:8022"
+  heralding:
+      build:
+        context: ./heralding
+        dockerfile: Dockerfile
+      volumes:
+        - heralding-data:/data/heralding
+      networks:
+        honeypot_net:
+          ipv4_address: 192.168.125.42
+      ports:
+        - "8080:80"
 networks:
   honeypot_net:
     driver: bridge
@@ -66,3 +84,4 @@ networks:
 volumes:
   sshesame-data:
   cowrie-data:
+  heralding-data:

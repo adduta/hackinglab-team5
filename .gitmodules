@@ -7,3 +7,6 @@
 [submodule "sshhipot"]
 	path = sshhipot
 	url = https://github.com/magisterquis/sshhipot.git
+[submodule "heralding"]
+	path = heralding
+	url = https://github.com/johnnykv/heralding.git
