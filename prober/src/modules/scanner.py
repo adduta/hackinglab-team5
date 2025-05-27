@@ -5,6 +5,27 @@ import paramiko
 import time
 
 
+def run_zmap_scan(port, subnet, output_file):
+    gw_mac = os.getenv("GATEWAY_MAC", "aa:bb:cc:dd:ee:ff")
+    cmd = [
+        "zmap",
+        "-G", gw_mac,
+        "-i", "eth0",
+        "-p", str(port),
+        subnet,
+        "--blacklist-file=/dev/null",
+        "-o", output_file
+    ]
+    proc = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+    if proc.returncode != 0:
+        print(f"[!] ZMap failed on port {port} (exit {proc.returncode}):")
+        print(proc.stderr.strip())
+        return None
+    return output_file
+
+
 def run_nmap_scan(output_file):
     """Run nmap scan on the network to find SSH servers and save the results to a file"""
     # Known targets from our network
@@ -23,9 +44,7 @@ def run_nmap_scan(output_file):
         for port in ports:
             zmap_output = f"zmap_port_{port}.txt"
             print(f"[*] Running ZMap scan on port {port}...")
-            subprocess.run(
-                ["sudo", "zmap", "-p", str(port), subnet, "-o", zmap_output], check=True
-            )
+            run_zmap_scan(port, subnet, zmap_output)
             print(
                 f"[+] ZMap scan on port {port} completed. Results saved to {zmap_output}"
             )

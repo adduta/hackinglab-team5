@@ -38,17 +38,17 @@ services:
         ipv4_address: 192.168.125.90
 
   prober:
+    image: prober
+    network_mode: "host"
     container_name: prober
     hostname: prober
     build:
       context: ./prober
       dockerfile: Dockerfile
     command: python3 /prober/src/probe.py
-    networks:
-      honeypot_net:
-        ipv4_address: 192.168.125.10
-    working_dir:
-      /prober/src
+    environment:
+      - GATEWAY_MAC=aa:bb:cc:dd:ee:ff
+    working_dir: /prober/src
     volumes:
       - type: bind
         source: ./prober/src
