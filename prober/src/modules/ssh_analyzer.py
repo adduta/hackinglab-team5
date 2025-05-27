@@ -4,8 +4,8 @@ import paramiko
 import time
 from typing import Dict, Tuple, Optional
 from .credential_manager import CredentialManager
-from .auth_tester import AuthTester
-from .honeypot_fingerprinter import HoneypotFingerprinter, clean_ansi_escape_codes
+from .auth_tester import AuthTester, AuthTesterOutput
+from .utils import clean_ansi_escape_codes
 
 def analyze_pcap(pcap_file: str) -> None:
     """Analyze the pcap file and print the SSH packet details"""
@@ -40,19 +40,19 @@ def execute_commands(session, commands: Dict[str, str]) -> Dict[str, str]:
             clean_text = extract_command_output(decoded, command)
             results[key] = clean_text
     except Exception as e:
-        print(f'Error executing commands: {e}')
+        print(f'Error executing commands: {e}', flush=True)
     return results
 
-def try_multiple_auth(host: str, port: int, auth_func, auth_arg, num_attempts: int = 10) -> HoneypotFingerprinter:
+def try_multiple_auth(host: str, port: int, auth_func, auth_arg, num_attempts: int = 10) -> AuthTesterOutput:
     """Try multiple authentication attempts with different credentials"""
     credential_manager = CredentialManager()
     auth_tester = AuthTester(credential_manager)
     return auth_tester.test_auth(host, port, auth_func, num_attempts)
 
-def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, commands: Dict[str, str]) -> Tuple[Optional[Dict[str, str]], Optional[Dict[str, float]]]:
+def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, commands: Dict[str, str]) -> Tuple[Optional[Dict[str, str]], Optional[AuthTesterOutput]]:
     """Try to authenticate to the SSH server and print the result"""
     # First, perform multiple authentication attempts
-    fingerprinter = try_multiple_auth(host, port, auth_func, auth_arg)
+    auth_output = try_multiple_auth(host, port, auth_func, auth_arg)
     
     # Now try the actual authentication for command execution
     transport = paramiko.Transport((host, port))
@@ -65,31 +65,17 @@ def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, comma
             if commands:
                 session = transport.open_session()
                 results = execute_commands(session, commands)
-                
                 # Format and print results nicely
                 print("\n=== Command Results ===")
                 for cmd, output in results.items():
-                    print(f"\n--- {cmd} ---")
+                    print(f"\n--- {cmd} ---", flush=True)
                     formatted_output = format_command_output(cmd, output)
                     print(formatted_output)
-                
-                # Analyze results for honeypot detection
-                analysis = fingerprinter.analyze_all_responses(results)
-                print("\n=== Honeypot Analysis ===")
-                print(f"Total Score: {analysis['total_score']:.2f}")
-                print(f"Empty Response Ratio: {analysis['empty_response_ratio']:.2%}")
-                print(f"Auth Success Rate: {analysis['auth_success_rate']:.2%}")
-                if 'auth_score' in analysis:
-                    print(f"Auth Score Contribution: {analysis['auth_score']:.2f}")
-                print(f"Likely Honeypot: {analysis['is_honeypot']}")
-                print("Command-specific scores:")
-                for cmd, score in analysis['command_scores'].items():
-                    print(f"  {cmd}: {score:.2f}")
-                
+
                 session.close()
-                return results, analysis
+                return results, auth_output
         else:
-            print(f"[-] Auth failed for {username}@{host}")
+            print(f"[-] Auth failed for {username}@{host}", flush=True)
             return None, None
             
     except Exception as e:
@@ -136,7 +122,7 @@ def format_command_output(command: str, output: str) -> str:
         # Split into lines and format as a table
         lines = cleaned_output.strip().split('\n')
         if len(lines) > 0:
-            # Skip the total line if present
+            # Skip the total line if presentf
             if lines[0].startswith('total'):
                 lines = lines[1:]
             # Format each line

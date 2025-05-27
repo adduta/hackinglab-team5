@@ -18,6 +18,7 @@ from .ssh_analyzer import (
     public_key_auth
 )
 from .prober import probe_ssh_server
+from .utils import clean_ansi_escape_codes
 
 __all__ = [
     'run_nmap_scan',
@@ -27,5 +28,6 @@ __all__ = [
     'try_ssh_auth',
     'password_auth',
     'public_key_auth',
-    'probe_ssh_server'
+    'probe_ssh_server',
+    'clean_ansi_escape_codes'
 ] 
