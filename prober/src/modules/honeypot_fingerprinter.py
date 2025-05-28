@@ -5,6 +5,7 @@ from typing import Dict
 from .auth_tester import AuthTesterOutput
 from .fingerprints.cowrie_fingerprinter import CowrieFingerprinter
 from .fingerprints.generic_fingerprinter import GenericFingerprinter
+from .fingerprints.sshesame_fingerprinter import SSHSameFingerprinter
 
 
 class HoneypotFingerprinter:
@@ -22,7 +23,11 @@ class HoneypotFingerprinter:
         cowrie_fingerprinter = CowrieFingerprinter(results=self.results, auth=self.auth)
         cowrie_score = cowrie_fingerprinter.compute_and_explain()
 
+        sshesame_fingerprinter = SSHSameFingerprinter(results=self.results, auth=self.auth)
+        sshesame_score = sshesame_fingerprinter.compute_and_explain()
+
         return {
             'is_honeypot': honeypot_outcome,
-            'cowrie_score': cowrie_score
+            'cowrie_score': cowrie_score,
+            'sshesame_score': sshesame_score
         }
