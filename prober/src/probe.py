@@ -17,7 +17,9 @@ def main():
         "whoami": "whoami",
         "ls": "ls -la",   
         "ps": "ps aux",
-        "uname": "uname -a"
+        "uname": "uname -a",
+        "ping": "ping -c 1 google.com",
+        "ifconfig": "ifconfig && ifconfig"
     }
     # 3. Probe each target
     interface = 'eth0'
