@@ -56,10 +56,12 @@ cd [repository-name]
 pip install -r requirements.txt
 ```
 
-3. Run the detection system:
+3. Run the docker containers
 ```bash
-python prober/src/probe.py
+docker compose up --build -d
 ```
+
+4. To see the results, look into the logs of the `prober` container.
 
 ## Project Structure
 
