@@ -27,6 +27,9 @@ class CowrieFingerprinter(BaseFingerprinter):
         score = super().get_score()
         print("\n=== Cowrie Analysis ===")
         print(f"Total Score: {score:.2f}")
+
+        print(f"Is Cowrie: {score >= 1.35}")  # 75% of max score (1.8)
+
         self.show_rules_overview()
 
         return score

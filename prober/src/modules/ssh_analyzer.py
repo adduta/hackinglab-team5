@@ -15,7 +15,11 @@ def analyze_pcap(pcap_file: str) -> None:
     for pkt in cap:
         try:
             if hasattr(pkt, 'ssh'):
-                print(f"Time: {pkt.sniff_time} Type: {pkt.ssh.get_field_value('message_code')} Info: {pkt.ssh.get_field_value('message')}")
+                msg_type = pkt.ssh.get_field_value('message_code')
+                msg_info = pkt.ssh.get_field_value('message')
+                # Only print packets that have meaningful information
+                if msg_type and msg_info and msg_info != 'None':
+                    print(f"Time: {pkt.sniff_time} Type: {msg_type} Info: {msg_info}")
         except Exception as e:
             print(f"Packet parsing error: {e}")
     cap.close()

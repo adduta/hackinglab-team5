@@ -85,3 +85,4 @@ volumes:
   sshesame-data:
   cowrie-data:
   heralding-data:
+  honeytrap-data:

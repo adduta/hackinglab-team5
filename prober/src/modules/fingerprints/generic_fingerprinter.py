@@ -90,6 +90,10 @@ class GenericFingerprinter(BaseFingerprinter):
 
     def analyze_auth_patterns(self):
         """Analyze authentication patterns for suspicious behavior"""
+        # Return 0.0 if no attempts were made
+        if self.auth.attempts == 0:
+            return 0.0
+
         score = 0.0
 
         # Check if root login was allowed (suspicious)
