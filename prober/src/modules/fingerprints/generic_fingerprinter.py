@@ -114,9 +114,6 @@ class GenericFingerprinter(BaseFingerprinter):
     def check_malformed_packets(self):
         """"Honeypots have only returned malformed SSH packets upon inspection."""
         real_ssh_cnt = 0
-        for pkt in self._pcap_obj:
-            if hasattr(pkt, 'ssh'):
-                real_ssh_cnt += 1
         try:
             for pkt in self._pcap_obj:
                 if hasattr(pkt, 'ssh'):
