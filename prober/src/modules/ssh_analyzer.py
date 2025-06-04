@@ -26,22 +26,29 @@ def execute_commands(session, commands: Dict[str, str]) -> Dict[str, str]:
     try:
         session.get_pty()
         session.invoke_shell()
+        motd_text = wait_for_output(session, "motd")
+        results["motd"] = motd_text
         for key, command in commands.items():
             session.send(command + "\n")
-            time.sleep(0.5)
-            output = b""
-            end_time = time.time() + 5
-            while time.time() < end_time:
-                if session.recv_ready():
-                    output += session.recv(2048)
-                else:
-                    time.sleep(0.2)
-            decoded = output.decode(errors='ignore')
+            decoded = wait_for_output(session, command)
             clean_text = extract_command_output(decoded, command)
             results[key] = clean_text
     except Exception as e:
         print(f'Error executing commands: {e}', flush=True)
     return results
+
+def wait_for_output(session, command):
+    time.sleep(0.5)
+    output = b""
+    end_time = time.time() + 10
+    while time.time() < end_time:
+        if session.recv_ready():
+            output += session.recv(2048)
+        else:
+            time.sleep(0.2)
+
+    decoded = output.decode(errors="ignore")
+    return decoded
 
 def try_multiple_auth(host: str, port: int, auth_func, auth_arg, num_attempts: int = 10) -> AuthTesterOutput:
     """Try multiple authentication attempts with different credentials"""
@@ -59,7 +66,6 @@ def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, comma
     try:
         transport.start_client(timeout=5)
         auth_func(transport, username, auth_arg)
-        
         if transport.is_authenticated():
             print(f"[+] Auth succeeded for {username}@{host}")
             if commands:
