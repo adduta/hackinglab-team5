@@ -35,7 +35,7 @@ class AuthTester:
                 transport.start_client(timeout=5)
                 if i == 0:  # Only print banner on first attempt
                     output.banner = transport.remote_version
-                    print(f"[+] SSH Banner: {self.banner}")
+                    print(f"[+] SSH Banner: {output.banner}", flush=True)
                 
                 auth_func(transport, username, password)
                 success = transport.is_authenticated()
