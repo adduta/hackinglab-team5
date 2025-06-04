@@ -58,14 +58,20 @@ def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, comma
     # First, perform multiple authentication attempts
     auth_output = try_multiple_auth(host, port, auth_func, auth_arg)
     
+    if auth_output.success_patterns:
+        valid_username, valid_password = next(iter(auth_output.success_patterns.keys())).split(":") # Grab whatever pair works"username:password"
+    else:
+        valid_username = username
+        valid_password = auth_arg
+    
     # Now try the actual authentication for command execution
     transport = paramiko.Transport((host, port))
     try:
         transport.start_client(timeout=5)
-        auth_func(transport, username, auth_arg)
+        auth_func(transport, valid_username,valid_password)
         
         if transport.is_authenticated():
-            print(f"[+] Auth succeeded for {username}@{host}")
+            print(f"[+] Auth succeeded for {valid_username}@{host}")
             if commands:
                 session = transport.open_session()
                 results = execute_commands(session, commands)
@@ -75,11 +81,10 @@ def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, comma
                     print(f"\n--- {cmd} ---", flush=True)
                     formatted_output = format_command_output(cmd, output)
                     print(formatted_output)
-
                 session.close()
                 return results, auth_output
         else:
-            print(f"[-] Auth failed for {username}@{host}", flush=True)
+            print(f"[-] Auth failed for {valid_username}@{host}", flush=True)
             return None, None
             
     except Exception as e:
