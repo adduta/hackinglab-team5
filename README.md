@@ -1,54 +1,33 @@
 # SSH Honeypot Detection System
 
-A sophisticated system for detecting SSH honeypots using multiple detection vectors and behavioral analysis.
+This tool is designed to detect and fingerprint SSH honeypots based on behavioral differences between real and simulated hosts. 
+It does by running a pipeline that scans a given sub network, performs authentication attempts, interacts with hosts and compares their behavior with known deception tactics used by specific honeypots.
 
-## Features
+The workflow therefore consists of three steps: **scan**, **probe**, **analyze**. A visual representation of the steps is shown below:
+![workflow.png](workflow.png)
 
-### 1. Enhanced Scoring System
-- Weighted scoring for different command types
-- Pattern matching for suspicious responses
-- Separate scoring for empty or no responses
-- Comprehensive analysis combining multiple detection vectors
+## Detection Methods
 
-### 2. SSH Banner Analysis
-- Detection of outdated SSH versions
-- Scoring based on known honeypot banner patterns
-- Regular expression matching for version analysis
-- Common honeypot SSH banner identification
+1. **Banner Analysis**
+   - Identifies outdated SSH versions
+   - Detects known honeypot banner patterns
+   - Scores based on version suspiciousness
 
-### 3. Authentication Pattern Analysis
-- Tracking of successful authentication patterns
-- Detection of suspicious root login allowance
-- Identification of inconsistent authentication behaviors
-- Analysis of username/password combinations
+2. **Authentication Testing**
+   - Tracks success/failure patterns
+   - Identifies suspicious root access
+   - Detects inconsistent auth behaviors
 
-### 4. Command Response Analysis
-Components analyzed:
-- `whoami`: Detection of common honeypot user contexts
-- `ps`: Analysis of process list completeness
-- `ls`: Evaluation of file system structure
-- `uname`: System information verification
-
-Features:
-- Empty or minimal response detection
-- ANSI escape code cleaning
-- Pattern matching for suspicious outputs
-- Command-specific weight assignments
-
-### 5. Detection Criteria
-
-A system is flagged as a honeypot if any of these conditions are met:
-- Total score ≥ 2.5 (comprehensive scoring)
-- Empty response ratio ≥ 50%
-- Authentication pattern score ≥ 0.8
-- SSH banner score ≥ 0.4
-
+3. **Command Response Analysis**
+   - Runs a specified set of commands
+   - Compares the responses with the expected behavior of a honeypot to fingerprint
 ## Usage
 
 1. Clone the repository:
 ```bash
-git clone [repository-url]
-cd [repository-name]
+git clone --recurse-submodules git@github.com:adduta/hackinglab-team5.git
+cd hackinglab-team5
+git submodule update --init --recursive
 ```
 
 2. Install dependencies:
@@ -69,65 +48,27 @@ docker compose up --build -d
 prober/
 ├── src/
 │   ├── modules/
-│   │   ├── auth_tester.py         # Authentication testing
+│   │   ├── fingerprints/
+│   │   │   ├── base_fingerprinter.py # Abstract base class for fingerprinters 
+│   │   │   ├── generic_fingerprinter.py # Determines if host is a honeypot or not 
+│   │   │   ├── cowrie_fingerprinter.py # Cowrie signature detection
+│   │   │   ├── honeytrap_fingerprinter.py # Honeytrap signature detection
+│   │   │   ├── heralding_fingerprinter.py # Heralding signature detection
+│   │   │   ├── sshesame_fingerprinter.py # Heralding signature detection
+│   │   ├── auth_tester.py # Authentication testing
 │   │   ├── credential_manager.py  # Credential handling
 │   │   ├── honeypot_fingerprinter.py  # Core detection logic
-│   │   ├── scanner.py            # Network scanning
-│   │   └── ssh_analyzer.py       # SSH response analysis
-│   └── probe.py                  # Main entry point
+│   │   ├── scanner.py # Network scanning
+│   │   └── ssh_analyzer.py # SSH response analysis
+│   │   └── utils.py # Utilty functions 
+│   └── probe.py  # Main entry point
 ```
 
-## Detection Methods
-
-1. **Banner Analysis**
-   - Identifies outdated SSH versions
-   - Detects known honeypot banner patterns
-   - Scores based on version suspiciousness
-
-2. **Authentication Testing**
-   - Tracks success/failure patterns
-   - Identifies suspicious root access
-   - Detects inconsistent auth behaviors
-
-3. **Command Response Analysis**
-   - Evaluates response completeness
-   - Checks for honeypot-specific patterns
-   - Analyzes system information consistency
-
-4. **System Behavior**
-   - Empty or minimal response tracking
-   - Process list analysis
-   - File system structure verification
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
-
-## License
-
-[Your License Here]
-
-# hackinglab-team5
-Detecting Honeypots in the wild
-
-# Cloning
-git clone --recurse-submodules  *< URL >*
-# Initialization
-git submodule update --init --recursive
-
-# Recent Changes
-## SSH Honeypot Detection
-- Added Nmap scanning functionality to discover SSH servers
-- Created modular code structure for better maintainability
-- Added packet capture and analysis capabilities
-
-# Port mapping summary
-| Container   | Internal IP     | SSH Port |
-|------------|-----------------|----------|
-| sshesame   | 192.168.125.40  | 2022     |
-| cowrie     | 192.168.125.30  | 2222     |
-| debian_host| 192.168.125.90  | 22       |
+#  Port Mapping Summary
+| Container | Internal IP    | Docker Net Port | Host Port |
+|-----------|----------------|-----------------|-----------|
+| sshesame  | 192.168.125.40 | 2022            | 2221      |
+| cowrie    | 192.168.125.30 | 2222            | 2222      |
+| heralding | 192.168.125.42 | 22              | 2223      |
+| debian    | 192.168.125.90 | 22              | 2224      |
+| honeytrap | 192.168.125.44 | 8022            | 2225      |

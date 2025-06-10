@@ -60,7 +60,8 @@ services:
       honeypot_net:
         ipv4_address: 192.168.125.44
     ports:
-      - "8022:8022"
+      - "2225:8022"
+
   heralding:
       build:
         context: ./heralding
@@ -71,7 +72,7 @@ services:
         honeypot_net:
           ipv4_address: 192.168.125.42
       ports:
-        - "8080:80"
+        - "2223:22"
 networks:
   honeypot_net:
     driver: bridge
