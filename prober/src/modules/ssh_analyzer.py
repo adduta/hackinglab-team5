@@ -53,8 +53,13 @@ def wait_for_output(session, command):
 def try_multiple_auth(host: str, port: int, auth_func, auth_arg, num_attempts: int = 10) -> AuthTesterOutput:
     """Try multiple authentication attempts with different credentials"""
     credential_manager = CredentialManager()
-    auth_tester = AuthTester(credential_manager)
-    return auth_tester.test_auth(host, port, auth_func, num_attempts)
+    auth_tester = AuthTester(
+        credential_manager = credential_manager,
+        host=host,
+        port=port,
+        auth_func=auth_func
+    )
+    return auth_tester.test_auth()
 
 def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, commands: Dict[str, str]) -> Tuple[Optional[Dict[str, str]], Optional[AuthTesterOutput]]:
     """Try to authenticate to the SSH server and print the result"""

@@ -1,4 +1,6 @@
 """Module for managing SSH credentials for testing"""
+import random
+import string
 
 class CredentialManager:
     """Manages SSH credentials for testing"""
@@ -6,7 +8,8 @@ class CredentialManager:
     def __init__(self):
         self.credentials = []
         self._load_default_credentials()
-    
+        self._gen_canary_credentials()
+
     def _load_default_credentials(self):
         """Load default set of credentials"""
         self.credentials = [
@@ -21,6 +24,15 @@ class CredentialManager:
             ("ubuntu", "ubuntu"),
             ("debian", "debian")
         ]
+
+    def _gen_canary_credentials(self, count: int = 5):
+        """
+        Generate a specified number of random credential pairs and adds them to the canary credentials list.
+        """
+        for _ in range(count):
+            username = ''.join(random.choices(string.ascii_lowercase, k=8))
+            password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+            self.add_credential(username, password)
     
     def add_credential(self, username: str, password: str):
         """Add a new credential pair"""
@@ -29,11 +41,3 @@ class CredentialManager:
     def add_credentials(self, credentials: list):
         """Add multiple credential pairs"""
         self.credentials.extend(credentials)
-    
-    def get_credential(self, index: int) -> tuple:
-        """Get credential pair at specified index"""
-        return self.credentials[index % len(self.credentials)]
-    
-    def get_credential_count(self) -> int:
-        """Get total number of credentials"""
- 
