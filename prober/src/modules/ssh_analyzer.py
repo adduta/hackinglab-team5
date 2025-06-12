@@ -67,6 +67,9 @@ def conduct_honeypot_experiment(transport: paramiko.Transport, host: str, port: 
     create_cmd = f"echo '{test_content}' > {test_filename}"
     session.send(create_cmd + "\n")
     time.sleep(1)
+    #Discard output of echo command
+    while session.recv_ready():
+        session.recv(2048) 
     
     # Verify file creation
     verify_cmd = f"cat {test_filename}"
@@ -77,7 +80,9 @@ def conduct_honeypot_experiment(transport: paramiko.Transport, host: str, port: 
         output += session.recv(2048)
     first_verify = output.decode(errors='ignore')
     session.close()
-    
+    print(f"FIRST VERIFY CONTENT: {first_verify}")
+    if test_content not in first_verify: 
+        return "Experiment File Creation: Failed"
     # Disconnect and reconnect
     transport.close()
     time.sleep(2)  # Wait a bit before reconnecting
@@ -109,7 +114,7 @@ def conduct_honeypot_experiment(transport: paramiko.Transport, host: str, port: 
         
         # Determine if it's a honeypot
         is_honeypot = test_content in first_verify and test_content not in second_verify
-        return f"Experiment File Creation: {not is_honeypot}"
+        return f"Experiment File Creation: {is_honeypot}"
     
     return "Experiment File Creation: Failed"
 
