@@ -109,7 +109,7 @@ def extract_command_output(raw_output: str, command: str) -> str:
     parts = raw_output.split(command, 1)
     if len(parts) < 2:
         return ""
-
+    
     # Get everything after the command
     after_command = parts[1]
 
