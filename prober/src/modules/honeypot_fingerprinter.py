@@ -7,6 +7,7 @@ from .fingerprints.cowrie_fingerprinter import CowrieFingerprinter
 from .fingerprints.generic_fingerprinter import GenericFingerprinter
 from .fingerprints.honeytrap_fingerprinter import HoneytrapFingerprinter
 from .fingerprints.sshesame_fingerprinter import SSHSameFingerprinter
+from .fingerprints.heralding_fingerprinter import HeraldingFingerprinter
 
 
 class HoneypotFingerprinter:
@@ -30,9 +31,13 @@ class HoneypotFingerprinter:
         honeytrap_fingerprinter = HoneytrapFingerprinter(results=self.results, auth=self.auth)
         honeytrap_score = honeytrap_fingerprinter.compute_and_explain()
 
+        heralding_fingerprinter = HeraldingFingerprinter(results=self.results, auth=self.auth, pcap_file=self.pcap_file)
+        heralding_score = heralding_fingerprinter.compute_and_explain()
+
         return {
             'is_honeypot': honeypot_outcome,
             'cowrie_score': cowrie_score,
             'sshesame_score': sshesame_score,
             'honeytrap_score': honeytrap_score,
+            'heralding_score': heralding_score,
         }

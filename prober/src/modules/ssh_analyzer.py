@@ -87,11 +87,11 @@ def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, comma
                 return results, auth_output
         else:
             print(f"[-] Auth failed for {username}@{host}", flush=True)
-            return None, None
+            return None, auth_output
             
     except Exception as e:
         print(f"[!] Error: {e}")
-        return None, None
+        return None, auth_output
     finally:
         transport.close()
 

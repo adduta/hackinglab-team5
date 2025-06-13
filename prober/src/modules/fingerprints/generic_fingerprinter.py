@@ -38,13 +38,14 @@ class GenericFingerprinter(BaseFingerprinter):
             use_pkt_analysis=True
         )
 
-    def compute_and_explain(self) -> bool:
+    def compute_and_explain(self) -> bool:  
         score = super().get_score()
+
         is_honeypot = any([
             score >= 2.5,  # Lower threshold but more comprehensive scoring
-            self._rule_score['empty_responses'] >= 0.5,  # 50% of commands gave empty/no response
-            self._rule_score['auth_patterns'] >= 0.8,  # Suspicious auth patterns
-            self._rule_score['banner'] >= 0.4  # Suspicious SSH banner
+            self._rule_score.get('empty_responses', 0) >= 0.5,  # 50% of commands gave empty/no response
+            self._rule_score.get('auth_patterns', 0) >= 0.8,  # Suspicious auth patterns
+            self._rule_score.get('banner', 0) >= 0.4  # Suspicious SSH banner
         ])
         print("\n=== Honeypot Analysis ===")
         print(f"Total Score: {score:.2f}")

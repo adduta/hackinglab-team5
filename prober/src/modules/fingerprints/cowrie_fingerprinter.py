@@ -38,7 +38,7 @@ class CowrieFingerprinter(BaseFingerprinter):
         Under this algorithm, google.com will resolve to 29.89.32.244.
         More information: https://github.com/cowrie/cowrie/blob/a4e8372a3c95819e8bd075e2da77486e03b6d020/src/cowrie/commands/ping.py#L83
         """
-        output = self.results["ping"]
+        output = self.results.get("ping")
         if output == None:
             return 0
 
@@ -53,7 +53,7 @@ class CowrieFingerprinter(BaseFingerprinter):
         When using ifconfig, Cowrie always shows loopback packets to be 110, but the number of bytes is different in two consecutive runs.
         Source code: https://github.com/cowrie/cowrie/blob/a4e8372a3c95819e8bd075e2da77486e03b6d020/src/cowrie/commands/ifconfig.py#L59
         """
-        output = self.results["ifconfig"]
+        output = self.results.get("ifconfig")
         if output == None:
             return 0
 

@@ -45,7 +45,7 @@ class BaseFingerprinter:
     def show_rules_overview(self):
         print("==== Rules Overview === ")
         for rule in self.rules:
-            print(f"{rule.name} - score: {self._rule_score[rule.id]}")
+            print(f"{rule.name} - score: {self._rule_score.get(rule.id, 0.0)}")
 
     @abstractmethod
     def compute_and_explain(self) -> bool | float:
