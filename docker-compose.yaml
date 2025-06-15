@@ -40,7 +40,7 @@ services:
   prober:
     image: prober
     # Comment out the line below to run on the honeypot network.
-    network_mode: "host"
+    # network_mode: "host"
     container_name: prober
     hostname: prober
     build:
@@ -54,10 +54,10 @@ services:
       - type: bind
         source: ./prober/src
         target: /prober/src
-# Comment out the 'networks' option below to run in network mode 'host'.
-# networks:
-#   honeypot_net:
-#     ipv4_address: 192.168.125.10
+    # Comment out the 'networks' option below to run in network mode 'host'.
+    networks:
+      honeypot_net:
+        ipv4_address: 192.168.125.10
 
 networks:
   honeypot_net:

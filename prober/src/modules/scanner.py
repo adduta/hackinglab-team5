@@ -5,7 +5,7 @@ import re
 import time
 
 ZMAP_REGEX = re.compile(r"\bsend:\s+(\d+)\b")
-RUNNING_IN_DOCKER = False
+RUNNING_IN_DOCKER = True
 
 
 def run_zmap_scan(port, subnet, output_file):
@@ -21,7 +21,7 @@ def run_zmap_scan(port, subnet, output_file):
         str(port),
         "--blacklist-file=/dev/null",
         "-r",
-        "10000",
+        "100000",
         "--cooldown-time",
         "1",
         "-o",
@@ -56,32 +56,37 @@ def run_nmap_scan(output_file):
     ]
     known_ips = [obj["ip"] for obj in known_targets]
     print(f"here are the known ips: {known_ips}", flush=True)
-    subnet = "127.0.0.0/24"
+    host_subnet = "192.168.1.0/24"
+    docker_subnet = "192.168.125.0/24"
     ports = [22, 2022, 2222, 2223]
+
+    if RUNNING_IN_DOCKER:
+        subnet = docker_subnet
+    else:
+        subnet = host_subnet
 
     try:
         live_ips = set()
-        if not RUNNING_IN_DOCKER:
-            start = time.perf_counter_ns()
-            zmap_files = [f"zmap_port_{p}.txt" for p in ports]
-            with cf.ThreadPoolExecutor() as ex:
-                futures = [
-                    ex.submit(run_zmap_scan, p, subnet, fname)
-                    for p, fname in zip(ports, zmap_files)
-                ]
-                for f in futures:
-                    f.result()
-            delta = time.perf_counter_ns() - start
-            print(f"ZMAP total process took: {delta} ns.", flush=True)
+        start = time.perf_counter_ns()
+        zmap_files = [f"zmap_port_{p}.txt" for p in ports]
+        with cf.ThreadPoolExecutor() as ex:
+            futures = [
+                ex.submit(run_zmap_scan, p, subnet, fname)
+                for p, fname in zip(ports, zmap_files)
+            ]
+            for f in futures:
+                f.result()
+        delta = time.perf_counter_ns() - start
+        print(f"ZMAP total process took: {delta} ns.", flush=True)
 
-            for path in zmap_files:
-                if os.path.exists(path):
-                    with open(path) as f:
-                        for ip in f:
-                            ip = ip.strip()
-                            if ip:
-                                live_ips.add(ip)
-                    os.remove(path)
+        for path in zmap_files:
+            if os.path.exists(path):
+                with open(path) as f:
+                    for ip in f:
+                        ip = ip.strip()
+                        if ip:
+                            live_ips.add(ip)
+                os.remove(path)
 
         if not live_ips:
             print("[!] No hosts found via ZMap. Proceeding with known targets.")
