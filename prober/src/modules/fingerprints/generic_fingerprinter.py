@@ -12,7 +12,7 @@ class GenericFingerprinter(BaseFingerprinter):
     Classifies a host as a honeypot or not, without focusing on a specific honeypot.
     """
 
-    def __init__(self, results: Dict[str, str], auth: AuthTesterOutput, pcap_file: str):
+    def __init__(self, results: Dict[str, str], canary_results: Dict[str, str], auth: AuthTesterOutput, pcap_file: str):
         rules = [
             FingerprintRule(
                 id="empty_responses",
@@ -29,9 +29,36 @@ class GenericFingerprinter(BaseFingerprinter):
                 name="Suspicious auth patterns",
                 evaluate=self.analyze_auth_patterns
             ),
+            FingerprintRule(
+                id="malformed_packets",
+                name="Only exchanged malformed SSH packets",
+                evaluate=self.check_malformed_packets,
+            ),
+            FingerprintRule(
+                id="bogus_banner",
+                name="Accepted bogus SSH banner",
+                evaluate=self.analyze_bogus_banner
+            ),
+            FingerprintRule(
+                id="canary",
+                name="Public key auth attempt",
+                evaluate= self.analyze_canary 
+            ),
+            FingerprintRule(
+                id="hostkey",
+                name="Hostkey algorithm offer analysis",
+                evaluate=self.analyze_hostkey_algorithms
+            ),
+            FingerprintRule(
+                id="kex",
+                name="KEX algorithm offers",
+                evaluate=self.analyze_kex_algorithms
+            )
+
         ]
         super().__init__(
             results=results,
+            canary_results=canary_results,
             rules=rules,
             auth=auth,
             pcap_file=pcap_file,
@@ -65,10 +92,125 @@ class GenericFingerprinter(BaseFingerprinter):
                 no_response_cnt += 1
 
         return no_response_cnt / len(self.results)
+        
+    def analyze_canary(self):
+        """
+        Examine server response to a root public key authentication attempt.
+        Real servers proceed to signature negotiation and then reject.
+        Honeypots often short-circuit or reveal limitations in supported key types.
+        """
+        val = self.canary_results["root_key_auth"].lower()
+
+        if "unable to negotiate" in val or "no matching host key type" in val:
+            return 0.7  # Likely honeypot with broken/legacy crypto handling
+
+        if "this is an ssh honeypot" in val:
+            return 1.0  # Confirmed honeypot banner lol
+
+        if "permission denied" in val:
+            # Check if actual signature attempt occurred
+            if "send_pubkey_test" in val and "no mutual signature algorithm" in val:
+                return 0.0  # Expected failure
+            if "no mutual" in val or "disable method" in val:
+                return 0.4  # Incomplete key exchange
+            
+            return 0.0  # Fully handled rejection
+        
+        if not val.strip():
+            return 0.6  # Silent or very incomplete behavior
+
+        return 1.0  # Auth successful
+
+    
+    def analyze_bogus_banner(self):
+        """Analyze response to made up ssh banner"""
+        if not self.canary_results["bogus_banner"]:
+            return 0.0
+        val = self.canary_results["bogus_banner"].lower()
+
+        # Expected error message from real SSH servers
+        if "protocol major versions differ" in val:
+            return 0.0
+
+        # Suspicious: timeout, no output, or unclear response
+        if "timeout" in val:
+            return 0.4
+
+        #any other response is highly unusual (heralding)
+        return 0.8
+    
+    def analyze_hostkey_algorithms(self):
+        if not self.canary_results["root_key_auth"]:
+            return 1.0
+
+        hostkey_line = next((line for line in self.canary_results["root_key_auth"].split('\n') if 'host key algorithms:' in line), '')
+        if not hostkey_line:
+            return 1.0
+
+        # Extract algorithm list
+        hostkey_algs = hostkey_line.split(':', 1)[-1].strip().split(',')
+        num_hostkeys = len(hostkey_algs)
+
+        score = 0.0
+
+        # Too few or too many host key algorithms is suspicious
+        if num_hostkeys < 2 or num_hostkeys > 6:
+            score += 0.5
+
+        # Known suspicious or legacy hostkey types
+        suspicious_keys = {
+            'ssh-rsa': 0.3,
+            'ssh-dss': 0.8,
+            'ssh-rsa-sha224@ssh.com': 0.5,
+            'rsa-sha2-256@ssh.com': 0.4,
+            'x509v3-ssh-dss': 0.6
+        }
+
+        for alg in hostkey_algs:
+            if alg in suspicious_keys:
+                score += suspicious_keys[alg]
+
+        return min(score, 1.5)
+
+    
+    def analyze_kex_algorithms(self):
+
+        if not self.canary_results["root_key_auth"]:
+            return 1.0
+
+        kex_line = next((line for line in self.canary_results["root_key_auth"].split('\n') if 'KEX algorithms:' in line), '')
+        if not kex_line:
+            return 1.0
+
+        # Extract algorithm list from line
+        kex_algs = kex_line.split(':', 1)[-1].strip().split(',')
+        num_kex = len(kex_algs)
+
+        score = 0.0
+
+        # Suspicious if fewer than 3 or more than 12 algorithms
+        if num_kex < 3 or num_kex > 12:
+            score += 0.5
+
+        # Known suspicious/unusual KEX algorithms
+        suspicious_kex = {
+            'rsa2048-sha256': 0.6,
+            'curve448-sha512': 0.4,
+            'diffie-hellman-group1-sha1': 0.8,
+            'diffie-hellman-group15-sha512': 0.4
+        }
+
+        for alg in kex_algs:
+            if alg in suspicious_kex:
+                score += suspicious_kex[alg]
+
+        return min(score, 1.5)
+
+
 
     def analyze_banner(self):
         """Analyze SSH banner for honeypot indicators"""
-        if not self.auth.banner:
+        if not self.auth or not self.auth.banner:
             return 0.0
 
         # Common honeypot SSH banners and their scores
@@ -86,7 +228,7 @@ class GenericFingerprinter(BaseFingerprinter):
     def analyze_auth_patterns(self):
         """Analyze authentication patterns for suspicious behavior"""
         score = 0.0
-
+        if not self.auth: return 0.0
         # Check if root login was allowed (suspicious)
         root_logins = sum(1 for cred in self.auth.success_patterns if cred.startswith("root:"))
         if root_logins > 0:

@@ -10,13 +10,13 @@ def probe_ssh_server(host, port, username, password, pcap_file, interface,comman
     capture_proc = start_packet_capture(pcap_file, interface, port=port)
     time.sleep(5)
     canary_data = run_canary_methods(host, port)
-    print(canary_data)
     time.sleep(5)
     cmd_results, auth_output = try_ssh_auth(host, port, username, password_auth, password,commands)
     time.sleep(3)
     stop_packet_capture(capture_proc)
     fingerprinter = HoneypotFingerprinter(
         results=cmd_results,
+        canary_results=canary_data,
         auth_output=auth_output,
         pcap_file=pcap_file
     )

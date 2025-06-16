@@ -12,6 +12,8 @@ def main():
     # 1. Run Nmap scan to discover SSH servers and their configurations
     nmap_output_file = '/prober/src/nmap_results.txt'
     targets = run_nmap_scan(nmap_output_file)
+    print(targets)
+    #targets= [{'ip': '192.168.125.90', 'port': 22, 'name': 'debian'}]
     # 2. Create commands you want to run in each container
     commands = {
         "whoami": "whoami",

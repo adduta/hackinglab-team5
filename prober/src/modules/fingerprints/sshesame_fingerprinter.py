@@ -3,7 +3,7 @@ from modules.auth_tester import AuthTesterOutput
 from .base_fingerprinter import BaseFingerprinter, FingerprintRule
 
 class SSHSameFingerprinter(BaseFingerprinter):
-    def __init__(self, results: Dict[str, str], auth: AuthTesterOutput):
+    def __init__(self, results: Dict[str, str], canary_results: Dict[str,str], auth: AuthTesterOutput):
         rules = [
             FingerprintRule(
                 id="auth_success_rate",
@@ -13,6 +13,7 @@ class SSHSameFingerprinter(BaseFingerprinter):
         ]
         super().__init__(
             results=results,
+            canary_results=canary_results,
             rules=rules,
             auth=auth
         )

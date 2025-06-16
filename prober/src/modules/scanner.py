@@ -11,7 +11,7 @@ def run_nmap_scan(output_file):
         {"ip": "192.168.125.40", "port": 2022, "name": "sshesame"},
         {"ip": "192.168.125.44", "port": 8022, "name": "honeytrap"},
         {"ip": "192.168.125.42", "port": 22, "name": "heralding"},
-        {"ip": "192.168.125.90", "port": 2224, "name": "debian"},
+        {"ip": "192.168.125.90", "port": 22, "name": "debian"}
     ]
     
     try:

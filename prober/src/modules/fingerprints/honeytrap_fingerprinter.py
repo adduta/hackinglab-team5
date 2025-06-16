@@ -4,7 +4,7 @@ from modules.auth_tester import AuthTesterOutput
 from .base_fingerprinter import BaseFingerprinter, FingerprintRule
 
 class HoneytrapFingerprinter(BaseFingerprinter):
-    def __init__(self, results: Dict[str, str], auth: AuthTesterOutput):
+    def __init__(self, results: Dict[str, str], canary_results: Dict[str,str], auth: AuthTesterOutput):
         rules = [
             FingerprintRule(
                 id="update_packages",
@@ -29,6 +29,7 @@ class HoneytrapFingerprinter(BaseFingerprinter):
         ]
         super().__init__(
             results = results,
+            canary_results=canary_results,
             rules = rules,
             auth = auth
         )

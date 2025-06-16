@@ -24,6 +24,7 @@ env/
 *.pcap
 nmap_results.txt
 *.log
+*.json
 
 # System specific files
 .DS_Store

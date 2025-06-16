@@ -51,6 +51,9 @@ services:
       /prober/src
     volumes:
       - type: bind
+        source: ./prober/results
+        target: /prober/results
+      - type: bind
         source: ./prober/src
         target: /prober/src
 
@@ -86,3 +89,4 @@ volumes:
   sshesame-data:
   cowrie-data:
   heralding-data:
+  
