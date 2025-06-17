@@ -32,7 +32,7 @@ class HoneypotFingerprinter:
         honeytrap_fingerprinter = HoneytrapFingerprinter(results=self.results, canary_results=self.canary_results, auth=self.auth)
         honeytrap_score = honeytrap_fingerprinter.compute_and_explain()
 
-        heralding_fingerprinter = HeraldingFingerprinter(results=self.results, auth=self.auth, pcap_file=self.pcap_file)
+        heralding_fingerprinter = HeraldingFingerprinter(results=self.results, canary_results=self.canary_results, auth=self.auth, pcap_file=self.pcap_file)
         heralding_score = heralding_fingerprinter.compute_and_explain()
 
         return {

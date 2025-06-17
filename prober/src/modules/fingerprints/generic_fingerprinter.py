@@ -29,11 +29,11 @@ class GenericFingerprinter(BaseFingerprinter):
                 name="Suspicious auth patterns",
                 evaluate=self.analyze_auth_patterns
             ),
-            FingerprintRule(
-                id="malformed_packets",
-                name="Only exchanged malformed SSH packets",
-                evaluate=self.check_malformed_packets,
-            ),
+            # FingerprintRule(
+            #     id="malformed_packets",
+            #     name="Only exchanged malformed SSH packets",
+            #     evaluate=self.check_malformed_packets,
+            # ),
             FingerprintRule(
                 id="bogus_banner",
                 name="Accepted bogus SSH banner",
@@ -69,7 +69,7 @@ class GenericFingerprinter(BaseFingerprinter):
         score = super().get_score()
 
         is_honeypot = any([
-            score >= 2.5,  # Lower threshold but more comprehensive scoring
+            score >= 3.2,  # Lower threshold but more comprehensive scoring
             self._rule_score.get('empty_responses', 0) >= 0.5,  # 50% of commands gave empty/no response
             self._rule_score.get('auth_patterns', 0) >= 0.8,  # Suspicious auth patterns
             self._rule_score.get('banner', 0) >= 0.4  # Suspicious SSH banner
@@ -125,7 +125,7 @@ class GenericFingerprinter(BaseFingerprinter):
     def analyze_bogus_banner(self):
         """Analyze response to made up ssh banner"""
         if not self.canary_results["bogus_banner"]:
-            return 0.0
+            return 0.4
         val = self.canary_results["bogus_banner"].lower()
 
         # Expected error message from real SSH servers
@@ -143,13 +143,18 @@ class GenericFingerprinter(BaseFingerprinter):
         if not self.canary_results["root_key_auth"]:
             return 1.0
 
-        hostkey_line = next((line for line in self.canary_results["root_key_auth"].split('\n') if 'host key algorithms:' in line), '')
-        if not hostkey_line:
-            return 1.0
+        server_hostkey = []
+        lines = self.canary_results["root_key_auth"].splitlines()
+        for i, line in enumerate(lines):
+            if 'peer server KEXINIT proposal' in line:
+                # Expect the next relevant line to contain KEX algorithms
+                for j in range(i+1, min(i+5, len(lines))):  # avoid index error
+                    if 'host key algorithms:' in lines[j]:
+                        server_hostkey = lines[j].split(':', 1)[-1].strip().split(',')
+                        break
 
-        # Extract algorithm list
-        hostkey_algs = hostkey_line.split(':', 1)[-1].strip().split(',')
-        num_hostkeys = len(hostkey_algs)
+        num_hostkeys = len(server_hostkey)
+        #print(server_hostkey)
 
         score = 0.0
 
@@ -166,7 +171,7 @@ class GenericFingerprinter(BaseFingerprinter):
             'x509v3-ssh-dss': 0.6
         }
 
-        for alg in hostkey_algs:
+        for alg in server_hostkey:
             if alg in suspicious_keys:
                 score += suspicious_keys[alg]
 
@@ -178,13 +183,17 @@ class GenericFingerprinter(BaseFingerprinter):
         if not self.canary_results["root_key_auth"]:
             return 1.0
 
-        kex_line = next((line for line in self.canary_results["root_key_auth"].split('\n') if 'KEX algorithms:' in line), '')
-        if not kex_line:
-            return 1.0
+        server_kex = []
+        lines = self.canary_results["root_key_auth"].splitlines()
+        for i, line in enumerate(lines):
+            if 'peer server KEXINIT proposal' in line:
+                # Expect the next relevant line to contain KEX algorithms
+                for j in range(i+1, min(i+5, len(lines))):  # avoid index error
+                    if 'KEX algorithms:' in lines[j]:
+                        server_kex = lines[j].split(':', 1)[-1].strip().split(',')
+                        break
 
-        # Extract algorithm list from line
-        kex_algs = kex_line.split(':', 1)[-1].strip().split(',')
-        num_kex = len(kex_algs)
+        num_kex = len(server_kex)
 
         score = 0.0
 
@@ -200,7 +209,7 @@ class GenericFingerprinter(BaseFingerprinter):
             'diffie-hellman-group15-sha512': 0.4
         }
 
-        for alg in kex_algs:
+        for alg in server_kex:
             if alg in suspicious_kex:
                 score += suspicious_kex[alg]
 
