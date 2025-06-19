@@ -15,6 +15,11 @@ class CowrieFingerprinter(BaseFingerprinter):
                 id="ifconfig",
                 name="ifconfig loopback shows 110 packets, but different bytes.",
                 evaluate=self.parse_ifconfig
+            ),
+            FingerprintRule(
+                id="file_persistence",
+                name="File persistence test",
+                evaluate=self.parse_file_persistence
             )
         ]
         super().__init__(
@@ -77,5 +82,18 @@ class CowrieFingerprinter(BaseFingerprinter):
         if len(rx_packets) == 2 and len(rx_bytes) == 2:
             if rx_packets[0] == rx_packets[1] == 110 and rx_bytes[0] != rx_bytes[1]:
                 return 0.8
+        return 0
+
+    def parse_file_persistence(self) -> float:
+        """
+        Check if the file persistence experiment indicates a honeypot.
+        If the experiment result shows "True", it means the file was not persistent (honeypot behavior).
+        """
+        if "Experiment File Creation" not in self.results:
+            return 0
+            
+        result = self.results["Experiment File Creation"]
+        if "True" in result:  # File was not persistent (honeypot behavior)
+            return 3.0
         return 0
 

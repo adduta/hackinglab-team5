@@ -65,13 +65,78 @@ def try_multiple_auth(host: str, port: int, auth_func, auth_arg, num_attempts: i
     )
     return auth_tester.test_auth()
 
+def conduct_honeypot_experiment(transport: paramiko.Transport, host: str, port: int, valid_username: str, valid_password: str, auth_func) -> str:
+    """Conduct an experiment to detect if the system is a honeypot by checking file persistence."""
+    test_filename = f"honeypot_test_{int(time.time())}.txt"
+    test_content = "This is a test file for honeypot detection"
+    
+    # First connection - Create file
+    session = transport.open_session()
+    session.get_pty()
+    session.invoke_shell()
+    
+    # Create file
+    create_cmd = f"echo '{test_content}' > {test_filename}"
+    session.send(create_cmd + "\n")
+    time.sleep(1)
+    #Discard output of echo command
+    while session.recv_ready():
+        session.recv(2048) 
+    
+    # Verify file creation
+    verify_cmd = f"cat {test_filename}"
+    session.send(verify_cmd + "\n")
+    time.sleep(1)
+    output = b""
+    while session.recv_ready():
+        output += session.recv(2048)
+    first_verify = output.decode(errors='ignore')
+    session.close()
+    print(f"FIRST VERIFY CONTENT: {first_verify}")
+    if test_content not in first_verify: 
+        return "Experiment File Creation: Failed"
+    # Disconnect and reconnect
+    transport.close()
+    time.sleep(2)  # Wait a bit before reconnecting
+    
+    # Second connection - Verify file persistence
+    transport = paramiko.Transport((host, port))
+    transport.start_client(timeout=5)
+    auth_func(transport, valid_username, valid_password)
+    
+    if transport.is_authenticated():
+        session = transport.open_session()
+        session.get_pty()
+        session.invoke_shell()
+        
+        # Check if file exists
+        check_cmd = f"cat {test_filename}"
+        session.send(check_cmd + "\n")
+        time.sleep(1)
+        output = b""
+        while session.recv_ready():
+            output += session.recv(2048)
+        second_verify = output.decode(errors='ignore')
+        
+        # Clean up test file
+        cleanup_cmd = f"rm {test_filename}"
+        session.send(cleanup_cmd + "\n")
+        time.sleep(1)
+        session.close()
+        
+        # Determine if it's a honeypot
+        is_honeypot = test_content in first_verify and test_content not in second_verify
+        return f"Experiment File Creation: {is_honeypot}"
+    
+    return "Experiment File Creation: Failed"
+
 def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, commands: Dict[str, str]) -> Tuple[Optional[Dict[str, str]], Optional[AuthTesterOutput]]:
     """Try to authenticate to the SSH server and print the result"""
     # First, perform multiple authentication attempts
     auth_output = try_multiple_auth(host, port, auth_func, auth_arg)
     
     if auth_output.success_patterns:
-        valid_username, valid_password = next(iter(auth_output.success_patterns.keys())).split(":") # Grab whatever pair works"username:password"
+        valid_username, valid_password = next(iter(auth_output.success_patterns.keys())).split(":") # Grab whatever pair works
     else:
         valid_username = username
         valid_password = auth_arg
@@ -80,8 +145,7 @@ def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, comma
     transport = paramiko.Transport((host, port))
     try:
         transport.start_client(timeout=5)
-        
-        auth_func(transport, valid_username,valid_password)
+        auth_func(transport, valid_username, valid_password)
         
         if transport.is_authenticated():
             print(f"[+] Auth succeeded for {valid_username}@{host}")
@@ -94,6 +158,13 @@ def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, comma
                     print(f"\n--- {cmd} ---", flush=True)
                     formatted_output = format_command_output(cmd, output)
                     print(formatted_output)
+                
+                # Conduct honeypot detection experiment
+                print("\n=== Conducting Honeypot Detection Experiment ===")
+                experiment_result = conduct_honeypot_experiment(transport, host, port, valid_username, valid_password, auth_func)
+                results["Experiment File Creation"] = experiment_result
+                print(f"\nExperiment Result: {experiment_result}")
+                
                 session.close()
                 return results, auth_output
         else:
