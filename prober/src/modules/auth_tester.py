@@ -15,34 +15,37 @@ class AuthTesterOutput:
             return 0.0
         return self.successes / self.attempts
 
+
 class AuthTester:
     """Handles SSH authentication testing"""
     
-    def __init__(self, credential_manager: CredentialManager):
+    def __init__(self, credential_manager: CredentialManager, host: str = None, port: int = 22, auth_func=None):
         self.credential_manager = credential_manager
-        self.banner = None
+        self.host = host
+        self.port = port
+        self.auth_func = auth_func
     
-    def test_auth(self, host: str, port: int, auth_func, num_attempts: int = 10) -> AuthTesterOutput:
+    def test_auth(self) -> AuthTesterOutput:
         """Perform multiple authentication attempts"""
-        print(f"\n[*] Testing {num_attempts} authentication attempts on {host}:{port}")
+        num_attempts = len(self.credential_manager.credentials)
+        print(f"\n[*] Testing {num_attempts} authentication attempts on {self.host}:{self.port}")
         output = AuthTesterOutput(attempts=0, successes=0, success_patterns={}, banner="")
 
-        for i in range(num_attempts):
-            username, password = self.credential_manager.get_credential(i)
-            transport = paramiko.Transport((host, port))
+        for i, (username, password) in enumerate(self.credential_manager.credentials):
+            transport = paramiko.Transport((self.host, self.port))
             success = False
             try:
                 transport.start_client(timeout=5)
                 if i == 0:  # Only print banner on first attempt
                     output.banner = transport.remote_version
-                    print(f"[+] SSH Banner: {self.banner}")
+                    print(f"[+] SSH Banner: {output.banner}", flush=True)
                 
-                auth_func(transport, username, password)
+                self.auth_func(transport, username, password)
                 success = transport.is_authenticated()
                 if success:
-                    print(f"[+] Auth succeeded for {username}@{host}")
+                    print(f"[+] Auth succeeded for {username}@{self.host}")
                 else:
-                    print(f"[-] Auth failed for {username}@{host}")
+                    print(f"[-] Auth failed for {username}@{self.host}")
                     
             except Exception as e:
                 print(f"[!] Error during auth attempt {i+1}: {e}")
