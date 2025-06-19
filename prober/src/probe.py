@@ -14,7 +14,14 @@ def main():
     nmap_output_file = "/prober/src/nmap_results.txt"
     targets = run_nmap_scan(nmap_output_file)
     # 2. Create commands you want to run in each container
-    commands = {"whoami": "whoami", "ls": "ls -la", "ps": "ps aux", "uname": "uname -a"}
+    commands = {
+        "whoami": "whoami",
+        "ls": "ls -la",
+        "ps": "ps aux",
+        "uname": "uname -a",
+        "ping": "ping -c 1 google.com",
+        "ifconfig": "ifconfig && ifconfig",
+    }
     # 3. Probe each target
     interface = "eth0"
     for target in targets:
@@ -22,9 +29,9 @@ def main():
         print(f"\n[*] Probing {target['name']} at {target['ip']}:{target['port']}")
         probe_ssh_server(
             target["ip"],
-            target["port"],
+            target["port"] if target["name"] != "debian" else 22,
             "root",
-            "admin",
+            "admin" if target["name"] != "honeytrap" else "password",
             pcap_file,
             interface,
             commands=commands,

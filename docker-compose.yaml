@@ -59,6 +59,25 @@ services:
       honeypot_net:
         ipv4_address: 192.168.125.10
 
+  honeytrap:
+    image: honeytrap/honeytrap:latest
+    networks:
+      honeypot_net:
+        ipv4_address: 192.168.125.44
+    ports:
+      - "2225:8022"
+
+  heralding:
+      build:
+        context: ./heralding
+        dockerfile: Dockerfile
+      volumes:
+        - heralding-data:/data/heralding
+      networks:
+        honeypot_net:
+          ipv4_address: 192.168.125.42
+      ports:
+        - "2223:22"
 networks:
   honeypot_net:
     driver: bridge
@@ -71,3 +90,5 @@ networks:
 volumes:
   sshesame-data:
   cowrie-data:
+  heralding-data:
+  honeytrap-data:
