@@ -43,6 +43,11 @@ A system is flagged as a honeypot if any of these conditions are met:
 - Authentication pattern score ≥ 0.8
 - SSH banner score ≥ 0.4
 
+## Network Scanning
+The system can optionally scan the network for live hosts. The scanner incorporates a fast network scan using `ZMap` to find live hosts, which are later scanned by `NMap` to identify its Operating System, version, and distance in the network.
+
+By default the scanner runs in Docker mode, which skips finding live hosts and proceeds with known hosts. If a scan of the network is needed. toggle the `RUNNING_IN_DOCKER` constant in `scanner.py` to be `False`. Set the `HOST_NETWORK` constant to the subnet to be scanned (ex. `192.168.1.0/24`). Now, the newly found hosts will also be evaluated using the tool.
+
 ## Usage
 
 1. Clone the repository:

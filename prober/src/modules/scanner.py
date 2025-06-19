@@ -5,10 +5,15 @@ import re
 import time
 
 ZMAP_REGEX = re.compile(r"\bsend:\s+(\d+)\b")
+# Toggle RUNNING_IN_DOCKER to False if conducting an actual network scan
 RUNNING_IN_DOCKER = True
+# Change the parameter HOST_SUBNET if conducting an actual network scan.
+HOST_SUBNET = "192.168.1.0/24"
+DOCKER_SUBNET = "192.168.125.0/24"
 
 
 def run_zmap_scan(port, subnet, output_file):
+    """Runs Zmap scan to provide Nmap with live host IPs if an actual network scan is perfomed."""
     gw_mac = os.getenv("GATEWAY_MAC", "aa:bb:cc:dd:ee:ff")
 
     cmd = [
@@ -46,7 +51,7 @@ def run_zmap_scan(port, subnet, output_file):
 
 
 def run_nmap_scan(output_file):
-    """Run nmap scan on the network to find SSH servers and save the results to a file"""
+    """Runs nmap scan on the network to find SSH servers and saves the results to a file."""
     # Known targets from our network
     known_targets = [
         {"ip": "192.168.125.30", "port": 2222, "name": "cowrie"},
@@ -54,16 +59,13 @@ def run_nmap_scan(output_file):
         # {"ip": "192.168.125.90", "port": 2224, "name": "debian"},
         # {"ip": "192.168.125.20", "port": 2223, "name": "sshhipot"}
     ]
+
+    known_tuples = {(t["ip"], t["port"]) for t in known_targets}
     known_ips = [obj["ip"] for obj in known_targets]
-    print(f"here are the known ips: {known_ips}", flush=True)
-    host_subnet = "192.168.1.0/24"
-    docker_subnet = "192.168.125.0/24"
+    print(f"IPs known to be live: {known_ips}", flush=True)
     ports = [22, 2022, 2222, 2223]
 
-    if RUNNING_IN_DOCKER:
-        subnet = docker_subnet
-    else:
-        subnet = host_subnet
+    subnet = DOCKER_SUBNET if RUNNING_IN_DOCKER else HOST_SUBNET
 
     try:
         live_ips = set()
@@ -77,23 +79,34 @@ def run_nmap_scan(output_file):
             for f in futures:
                 f.result()
         delta = time.perf_counter_ns() - start
-        print(f"ZMAP total process took: {delta} ns.", flush=True)
+        print(f"ZMap total process took: {delta} ns.", flush=True)
 
-        for path in zmap_files:
-            if os.path.exists(path):
-                with open(path) as f:
-                    for ip in f:
-                        ip = ip.strip()
-                        if ip:
-                            live_ips.add(ip)
-                os.remove(path)
+        # Add found hosts for NMap scan.
+        for port, path in zip(ports, zmap_files):
+            if not os.path.exists(path):
+                continue
+
+            with open(path) as fh:
+                for ip in map(str.strip, fh):
+                    if not ip:
+                        continue
+
+                    live_ips.add(ip)
+                    if (ip, port) in known_tuples:
+                        continue
+
+                    known_targets.append({"ip": ip, "port": port, "name": "zmap"})
+                    known_tuples.add((ip, port))
+
+        os.remove(path)
 
         if not live_ips:
             print("[!] No hosts found via ZMap. Proceeding with known targets.")
-            # return known_targets
-        print(f"here are the ips: {live_ips}", flush=True)
+        else:
+            print(f"IPs ZMap found: {live_ips}", flush=True)
+
         nmap_ips = list(live_ips) + known_ips
-        print(f"here are the nmap ips: {nmap_ips}", flush=True)
+        print(f"IPs NMap will scan: {nmap_ips}", flush=True)
         nmap_ports = ",".join(str(port) for port in ports)
         cmd = [
             "nmap",
@@ -111,22 +124,22 @@ def run_nmap_scan(output_file):
             "-T4",
         ] + nmap_ips
 
-        print("[*] Running nmap scan...", flush=True)
+        print("[*] Running NMap scan...", flush=True)
         start = time.perf_counter_ns()
         subprocess.run(
             cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
         delta = time.perf_counter_ns() - start
-        print(f"NMAP scan on all ports took {delta} ns.", flush=True)
-        print(f"[+] Nmap scan completed successfully. Results saved to {output_file}")
+        print(f"NMap scan on all ports took {delta} ns.", flush=True)
+        print(f"[+] NMap scan completed successfully. Results saved to {output_file}")
     except subprocess.TimeoutExpired:
-        print("[!] Nmap scan timed out")
+        print("[!] NMap scan timed out")
         print("[+] Proceeding with known targets")
     except subprocess.CalledProcessError as e:
-        print(f"[!] Nmap scan failed: {e}")
+        print(f"[!] NMap scan failed: {e}")
         print("[+] Proceeding with known targets")
     except Exception as e:
-        print(f"[!] Unexpected error during nmap scan: {e}")
+        print(f"[!] Unexpected error during NMap scan: {e}")
         print("[+] Proceeding with known targets")
 
     return known_targets
