@@ -29,11 +29,6 @@ class GenericFingerprinter(BaseFingerprinter):
                 name="Suspicious auth patterns",
                 evaluate=self.analyze_auth_patterns
             ),
-            FingerprintRule(
-                id="malformed_packets",
-                name="Only exchanged malformed SSH packets",
-                evaluate=self.check_malformed_packets,
-            )
         ]
         super().__init__(
             results=results,
@@ -58,9 +53,8 @@ class GenericFingerprinter(BaseFingerprinter):
 
         return is_honeypot
 
-
     def count_empty_responses(self):
-        if self.results == None:
+        if self.results is None:
             return 1
 
         no_response_cnt = 0
@@ -106,20 +100,3 @@ class GenericFingerprinter(BaseFingerprinter):
                 score += 0.8
 
         return score
-
-    def check_malformed_packets(self):
-        """"Honeypots have only returned malformed SSH packets upon inspection."""
-        real_ssh_cnt = 0
-        for pkt in self._pcap_obj:
-            if hasattr(pkt, 'ssh'):
-                real_ssh_cnt += 1
-        try:
-            for pkt in self._pcap_obj:
-                if hasattr(pkt, 'ssh'):
-                    real_ssh_cnt += 1
-        except Exception as e:
-            print(f"Did you activate package analysis for this Packet parsing error: {e}")
-
-        if real_ssh_cnt == 0:
-            return 1.5
-        return 0
