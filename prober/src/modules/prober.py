@@ -11,6 +11,12 @@ def probe_ssh_server(host, port, username, password, pcap_file, interface,comman
     cmd_results, auth_output = try_ssh_auth(host, port, username, password_auth, password,commands)
     time.sleep(3)
     stop_packet_capture(capture_proc)
+    
+    # Create default AuthTesterOutput if auth_output is None
+    if auth_output is None:
+        from .auth_tester import AuthTesterOutput
+        auth_output = AuthTesterOutput(banner="", attempts=0, successes=0, success_patterns={})
+    
     fingerprinter = HoneypotFingerprinter(
         results=cmd_results,
         auth_output=auth_output,
