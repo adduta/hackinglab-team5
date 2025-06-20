@@ -121,7 +121,10 @@ def conduct_honeypot_experiment(transport: paramiko.Transport, host: str, port: 
 def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, commands: Dict[str, str]) -> Tuple[Optional[Dict[str, str]], Optional[AuthTesterOutput]]:
     """Try to authenticate to the SSH server and print the result"""
     # First, perform multiple authentication attempts
+    total_start_time = time.time()
+    auth_start_time = time.time()
     auth_output = try_multiple_auth(host, port, auth_func, auth_arg)
+    auth_end_time = time.time()
     
     if auth_output.success_patterns:
         valid_username, valid_password = next(iter(auth_output.success_patterns.keys())).split(":") # Grab whatever pair works
@@ -137,6 +140,7 @@ def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, comma
         
         if transport.is_authenticated():
             print(f"[+] Auth succeeded for {valid_username}@{host}")
+            cmd_start_time = time.time()
             if commands:
                 session = transport.open_session()
                 results = execute_commands(session, commands)
@@ -154,6 +158,11 @@ def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, comma
                 print(f"\nExperiment Result: {experiment_result}")
                 
                 session.close()
+                cmd_end_time = time.time()
+                total_duration = time.time() - total_start_time
+                print(f"Auth time: {auth_end_time - auth_start_time} seconds")
+                print(f"Command execution time: {cmd_end_time - cmd_start_time} seconds")
+                print(f"Total duration: {total_duration} seconds")
                 return results, auth_output
         else:
             print(f"[-] Auth failed for {valid_username}@{host}", flush=True)
