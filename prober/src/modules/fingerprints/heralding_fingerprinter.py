@@ -39,7 +39,7 @@ class HeraldingFingerprinter(BaseFingerprinter):
 
     def compute_and_explain(self) -> bool:
         score = super().get_score()
-        is_heralding = score >= 2.5  # Need at least 1.0 points to be considered Heralding
+        is_heralding = score >= 2.5
         
         print("\n=== Heralding Analysis ===")
         print(f"Total Score: {score:.2f}")

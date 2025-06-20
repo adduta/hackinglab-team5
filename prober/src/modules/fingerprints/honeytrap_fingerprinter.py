@@ -41,8 +41,11 @@ class HoneytrapFingerprinter(BaseFingerprinter):
 
     def compute_and_explain(self) -> bool | float:
         score = super().get_score()
+        max_score = 3.2
+        threshold = 0.75 * max_score
         print("\n=== Honeytrap Analysis ===")
         print(f"Total Score: {score:.2f}")
+        print(f"Is Honeytrap: {score >= threshold}")
         self.show_rules_overview()
 
         return score
@@ -68,7 +71,6 @@ class HoneytrapFingerprinter(BaseFingerprinter):
         version_match = re.search(r"Ubuntu\s+([\d.]+ LTS).*built\s+([\d-]+)", self.results["motd"])
         version = version_match.group(1) if version_match else None
         build_date = version_match.group(2) if version_match else None
-
         if version == "16.04.1 LTS" and build_date == "2016-12-10":
             return 0.5
         return 0

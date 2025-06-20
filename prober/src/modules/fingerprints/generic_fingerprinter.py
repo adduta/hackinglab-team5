@@ -67,9 +67,11 @@ class GenericFingerprinter(BaseFingerprinter):
 
     def compute_and_explain(self) -> bool:  
         score = super().get_score()
+        max_score = 8.8
+        threshold = 0.75 * max_score
 
         is_honeypot = any([
-            score >= 3.2,  # Lower threshold but more comprehensive scoring
+            score >= threshold,  # Lower threshold but more comprehensive scoring
             self._rule_score.get('empty_responses', 0) >= 0.5,  # 50% of commands gave empty/no response
             self._rule_score.get('auth_patterns', 0) >= 0.8,  # Suspicious auth patterns
             self._rule_score.get('banner', 0) >= 0.4  # Suspicious SSH banner

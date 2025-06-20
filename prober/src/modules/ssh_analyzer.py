@@ -161,9 +161,13 @@ def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, comma
                 
                 # Conduct honeypot detection experiment
                 print("\n=== Conducting Honeypot Detection Experiment ===")
-                experiment_result = conduct_honeypot_experiment(transport, host, port, valid_username, valid_password, auth_func)
-                results["Experiment File Creation"] = experiment_result
-                print(f"\nExperiment Result: {experiment_result}")
+                try:
+                    experiment_result = conduct_honeypot_experiment(transport, host, port, valid_username, valid_password, auth_func)
+                    results["Experiment File Creation"] = experiment_result
+                    print(f"\nExperiment Result: {experiment_result}")
+                except Exception as e:
+                    print(f"[-] Error conducting honeypot detection experiment: {e}")
+                    results["Experiment File Creation"] = "Failed"
                 
                 session.close()
                 return results, auth_output

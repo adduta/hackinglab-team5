@@ -31,11 +31,13 @@ class CowrieFingerprinter(BaseFingerprinter):
 
     def compute_and_explain(self) -> bool | float:
         score = super().get_score()
+        max_score = 4.8
+        threshold = 0.75 * max_score
+
         print("\n=== Cowrie Analysis ===")
         print(f"Total Score: {score:.2f}")
-
-        print(f"Is Cowrie: {score >= 1.35}")  # 75% of max score (1.8)
-
+        
+        print(f"Is Cowrie: {score >= threshold}")  
         self.show_rules_overview()
 
         return score
