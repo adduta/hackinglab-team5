@@ -64,7 +64,7 @@ def run_nmap_scan(output_file):
     known_tuples = {(t["ip"], t["port"]) for t in known_targets}
     known_ips = [obj["ip"] for obj in known_targets]
     print(f"IPs known to be live: {known_ips}", flush=True)
-    ports = [22, 2022, 2222, 2223]
+    ports = [22, 2022, 2222, 2223, 2224, 8022]
 
     subnet = DOCKER_SUBNET if RUNNING_IN_DOCKER else HOST_SUBNET
 
