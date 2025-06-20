@@ -20,7 +20,7 @@ class SSHSameFingerprinter(BaseFingerprinter):
 
     def compute_and_explain(self) -> bool:
         score = super().get_score()
-        is_sshesame = score >= 2.5  # Need at least 2.5 points to be considered SSHSame
+        is_sshesame = score >= 2.25  # 75% of max score (3.0)
         
         print("\n=== SSHSame Analysis ===")
         print(f"Total Score: {score:.2f}")

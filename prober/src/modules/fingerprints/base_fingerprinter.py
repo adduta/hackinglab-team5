@@ -36,6 +36,7 @@ class BaseFingerprinter:
                 self._rule_score[rule.id] = score
             except Exception as e:
                 print(f"Rule {rule.name} failed. Maybe you didn't enable packet analyis for this fingerprinter?\n Error: {e}")
+                self._rule_score[rule.id] = 0.0  # Set default score on failure
 
         if self._pcap_obj is not None:
             self._pcap_obj.close()
