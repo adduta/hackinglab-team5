@@ -3,16 +3,17 @@ from modules.auth_tester import AuthTesterOutput
 from .base_fingerprinter import BaseFingerprinter, FingerprintRule
 
 class SSHSameFingerprinter(BaseFingerprinter):
-    def __init__(self, results: Dict[str, str], auth: AuthTesterOutput):
+    def __init__(self, results: Dict[str, str], canary_results: Dict[str,str], auth: AuthTesterOutput):
         rules = [
             FingerprintRule(
                 id="auth_success_rate",
                 name="100% authentication success rate",
                 evaluate=self.check_auth_success_rate
-            ),
+            )
         ]
         super().__init__(
             results=results,
+            canary_results=canary_results,
             rules=rules,
             auth=auth
         )
@@ -27,6 +28,9 @@ class SSHSameFingerprinter(BaseFingerprinter):
         self.show_rules_overview()
         
         return is_sshesame
+    
+
+
 
     def check_auth_success_rate(self) -> float:
         """
@@ -39,5 +43,5 @@ class SSHSameFingerprinter(BaseFingerprinter):
         
         success_rate = self.auth.get_success_rate()
         if success_rate == 1.0:  # 100% success rate
-            return 2.5
+            return 1.5
         return 0.0

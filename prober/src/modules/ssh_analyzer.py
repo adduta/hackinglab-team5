@@ -168,12 +168,13 @@ def try_ssh_auth(host: str, port: int, username: str, auth_func, auth_arg, comma
                 session.close()
                 return results, auth_output
         else:
+
             print(f"[-] Auth failed for {valid_username}@{host}", flush=True)
             return None, None
             
     except Exception as e:
         print(f"[!] Error: {e}")
-        return None, None
+        return None, auth_output
     finally:
         transport.close()
 
@@ -191,7 +192,7 @@ def extract_command_output(raw_output: str, command: str) -> str:
     parts = raw_output.split(command, 1)
     if len(parts) < 2:
         return ""
-
+    
     # Get everything after the command
     after_command = parts[1]
 

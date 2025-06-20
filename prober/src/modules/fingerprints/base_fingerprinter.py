@@ -13,12 +13,12 @@ class FingerprintRule:
     evaluate: callable
 
 class BaseFingerprinter:
-    def __init__(self, results: Dict[str, str], rules: List[FingerprintRule],
+    def __init__(self, results: Dict[str, str], canary_results: Dict[str, str], rules: List[FingerprintRule],
                  auth: AuthTesterOutput, pcap_file: str = None, use_pkt_analysis: bool = False) -> None:
         self.results = results
+        self.canary_results = canary_results
         self.auth = auth
         self.rules = rules
-
         self._rule_score = {}
 
         self._pcap_obj = None
@@ -46,7 +46,7 @@ class BaseFingerprinter:
     def show_rules_overview(self):
         print("==== Rules Overview === ")
         for rule in self.rules:
-            print(f"{rule.name} - score: {self._rule_score[rule.id]}")
+            print(f"{rule.name} - score: {self._rule_score.get(rule.id, 0.0)}")
 
     @abstractmethod
     def compute_and_explain(self) -> bool | float:

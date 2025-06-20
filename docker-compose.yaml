@@ -52,6 +52,9 @@ services:
     working_dir: /prober/src
     volumes:
       - type: bind
+        source: ./prober/results
+        target: /prober/results
+      - type: bind
         source: ./prober/src
         target: /prober/src
     # Comment out the 'networks' option below to run in network mode 'host'.

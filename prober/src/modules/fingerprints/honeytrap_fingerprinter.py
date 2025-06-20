@@ -4,7 +4,7 @@ from modules.auth_tester import AuthTesterOutput
 from .base_fingerprinter import BaseFingerprinter, FingerprintRule
 
 class HoneytrapFingerprinter(BaseFingerprinter):
-    def __init__(self, results: Dict[str, str], auth: AuthTesterOutput):
+    def __init__(self, results: Dict[str, str], canary_results: Dict[str,str], auth: AuthTesterOutput):
         rules = [
             FingerprintRule(
                 id="update_packages",
@@ -25,10 +25,16 @@ class HoneytrapFingerprinter(BaseFingerprinter):
                 id="last_login",
                 name="last login 2017 on specific IP",
                 evaluate=self.check_last_login
+            ),
+            FingerprintRule(
+                id="hostkey",
+                name="only ssh-rsa as hostkey",
+                evaluate=self.check_hostkey
             )
         ]
         super().__init__(
             results = results,
+            canary_results=canary_results,
             rules = rules,
             auth = auth
         )
@@ -66,6 +72,24 @@ class HoneytrapFingerprinter(BaseFingerprinter):
         if version == "16.04.1 LTS" and build_date == "2016-12-10":
             return 0.5
         return 0
+    
+    def check_hostkey(self):
+        if not self.canary_results["root_key_auth"]:
+            return 0.0
+
+        server_hostkey = []
+        lines = self.canary_results["root_key_auth"].splitlines()
+        for i, line in enumerate(lines):
+            if 'peer server KEXINIT proposal' in line:
+                # Expect the next relevant line to contain KEX algorithms
+                for j in range(i+1, min(i+5, len(lines))):  # avoid index error
+                    if 'host key algorithms:' in lines[j]:
+                        server_hostkey = lines[j].split(':', 1)[-1].strip().split(',')
+                        break
+        if len(server_hostkey) == 1 and "ssh-rsa" in server_hostkey[0]:
+            return 1.0
+        
+        return 0.0
 
     def check_last_login(self) -> float:
         login_match = re.search(r"last login:\s+(.+?) from ([\d.]+)", self.results["motd"])
